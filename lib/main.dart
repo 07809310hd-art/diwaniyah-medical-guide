@@ -1,14 +1,15 @@
 // lib/main.dart
-// نسخة احترافية عصرية _- تسجيل مستخدم آمن بالاسم الثلاثي المدقق ورقم الهاتف العراقي
+// نسخة احترافية عصرية - تصميم طبي متقدم مع انتقالات وتأثيرات حركية
 import 'dart:ui';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+// إحساس تفاعلي بسيط: اهتزاز خفيف + صوت نقرة نظامي، يُستخدم عند الضغط على أي بطاقة أو قسم
 void tapFeedback() {
   HapticFeedback.lightImpact();
   SystemSound.play(SystemSoundType.click);
@@ -25,7 +26,7 @@ void main() async {
   runApp(const DiwaniyahMedicalApp());
 }
 
-// ==================== بيانات المستخدم الحالي ====================
+// ==================== بيانات المستخدم الحالي (تُحفظ محلياً بعد أول تسجيل) ====================
 class CurrentUser {
   static String? name;
   static String? phone;
@@ -51,12 +52,12 @@ class CurrentUser {
   }
 }
 
-// ==================== الألوان ====================
+// ==================== لوحة الألوان الطبية العصرية ====================
 class AppColors {
-  static const Color primary = Color(0xFF0EA5E9);
+  static const Color primary = Color(0xFF0EA5E9); // سماوي حيوي
   static const Color primaryDark = Color(0xFF0369A1);
-  static const Color secondary = Color(0xFF1E3A8A);
-  static const Color accent = Color(0xFF14B8A6);
+  static const Color secondary = Color(0xFF1E3A8A); // نيلي عميق
+  static const Color accent = Color(0xFF14B8A6); // تركواز طبي (نبضة الحياة)
   static const Color background = Color(0xFFF4F8FB);
   static const Color surface = Colors.white;
   static const Color textDark = Color(0xFF0F172A);
@@ -77,12 +78,13 @@ class AppColors {
   );
 }
 
+// ==================== أدوات الانتقال المخصصة ====================
 class FadeSlidePageRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
   FadeSlidePageRoute({required this.page})
       : super(
-          transitionDuration: const Duration(milliseconds: 300),
-          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionDuration: const Duration(milliseconds: 450),
+          reverseTransitionDuration: const Duration(milliseconds: 350),
           pageBuilder: (context, animation, secondaryAnimation) => page,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
@@ -90,7 +92,7 @@ class FadeSlidePageRoute<T> extends PageRouteBuilder<T> {
               opacity: curved,
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0, 0.05),
+                  begin: const Offset(0, 0.08),
                   end: Offset.zero,
                 ).animate(curved),
                 child: child,
@@ -104,7 +106,7 @@ void pushAnimated(BuildContext context, Widget page) {
   Navigator.push(context, FadeSlidePageRoute(page: page));
 }
 
-// ==================== النماذج ====================
+// ==================== نموذج بيانات الطبيب ====================
 class Doctor {
   final int id;
   final String fullName;
@@ -132,6 +134,7 @@ class Doctor {
     this.longitude,
   });
 
+  // يوجد إحداثيات صالحة يمكن فتحها على خرائط جوجل
   bool get hasLocation => latitude != null && longitude != null;
 
   factory Doctor.fromMap(Map<String, dynamic> map) {
@@ -151,6 +154,10 @@ class Doctor {
   }
 }
 
+// ==================== نموذج بيانات منشورات "نبض الديوانية" ====================
+// يقرأ الصفوف القادمة من جدول medical_reels في Supabase
+// الأعمدة الفعلية بالجدول: id, title, provider_name, media_type ('video' أو 'image'),
+// media_url, category, created_at
 class MedicalPost {
   final int id;
   final String mediaType;
@@ -182,6 +189,7 @@ class MedicalPost {
   }
 }
 
+// ==================== التطبيق الرئيسي ====================
 class DiwaniyahMedicalApp extends StatelessWidget {
   const DiwaniyahMedicalApp({super.key});
 
@@ -190,6 +198,13 @@ class DiwaniyahMedicalApp extends StatelessWidget {
     return MaterialApp(
       title: 'دليل الأطباء في الديوانية',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -202,17 +217,15 @@ class DiwaniyahMedicalApp extends StatelessWidget {
         fontFamily: 'Cairo',
         splashFactory: InkRipple.splashFactory,
       ),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-      home: const AppEntryGate(),
+      home: const Directionality(
+        textDirection: TextDirection.rtl,
+        child: AppEntryGate(),
+      ),
     );
   }
 }
 
+// ==================== بوابة الدخول: تتحقق هل المستخدم مسجّل مسبقاً أم لا ====================
 class AppEntryGate extends StatefulWidget {
   const AppEntryGate({super.key});
 
@@ -247,7 +260,7 @@ class _AppEntryGateState extends State<AppEntryGate> {
   }
 }
 
-// ==================== شاشة تسجيل البيانات الآمنة (الاسم الثلاثي) ====================
+// ==================== شاشة تسجيل الدخول لأول مرة (اسم، هاتف، مكان السكن) ====================
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -274,35 +287,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final phone = _phoneController.text.trim();
     final city = _cityController.text.trim();
 
-    // التحقق من أن الحقول ليست فارغة
     if (name.isEmpty || phone.isEmpty || city.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء تعبئة جميع الحقول بدقة')),
-      );
-      return;
-    }
-
-    // التحقق من إدخال الاسم الثلاثي على الأقل (3 كلمات)
-    final nameParts = name.split(RegExp(r'\s+'));
-    if (nameParts.length < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال الاسم الثلاثي الحقيقي (الاسم، اسم الاب، اسم الجد)')),
-      );
-      return;
-    }
-
-    // التحقق من رقم الهاتف العراقي (11 رقم ويبدأ بـ 07)
-    if (!RegExp(r'^07[0-9]{9}$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الهاتف غير صحيح، يجب أن يتكون من 11 رقماً ويبدأ بـ 07')),
+        const SnackBar(content: Text('الرجاء تعبئة جميع الحقول')),
       );
       return;
     }
 
     tapFeedback();
     setState(() => _isSaving = true);
+
     await CurrentUser.save(name, phone, city);
 
+    // تسجيل اختياري لسجلات المطوّر بقاعدة البيانات - لا يوقف التطبيق إذا فشل أو الجدول غير موجود بعد
     try {
       await Supabase.instance.client.from('app_users').insert({
         'full_name': name,
@@ -313,7 +310,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+      MaterialPageRoute(
+        builder: (context) => const Directionality(
+          textDirection: TextDirection.rtl,
+          child: MainNavigationScreen(),
+        ),
+      ),
     );
   }
 
@@ -322,7 +324,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -336,44 +338,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   gradient: AppColors.heroGradient,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.verified_user_rounded, color: Colors.white, size: 42),
+                child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 42),
               ),
               const SizedBox(height: 20),
               const Text(
-                'التسجيل الآمن في دليل أطباء الديوانية',
+                'مرحباً بك في دليل أطباء الديوانية',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.secondary),
               ),
               const SizedBox(height: 8),
               const Text(
-                'يرجى إدخال اسمك الثلاثي الحقيقي ورقم هاتفك للمتابعة بأمان والتفاعل بشكل موثوق',
+                'أدخل بياناتك مرة واحدة فقط لتتمكن من التفاعل والتعليق داخل التطبيق',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.5),
               ),
-              const SizedBox(height: 28),
-              _OnboardingField(
-                controller: _nameController,
-                icon: Icons.person_rounded,
-                hint: 'الاسم الثلاثي (مثال: محمد قاسم حسين)',
-              ),
+              const SizedBox(height: 32),
+              _OnboardingField(controller: _nameController, icon: Icons.person_rounded, hint: 'الاسم الكامل'),
               const SizedBox(height: 14),
               _OnboardingField(
                 controller: _phoneController,
                 icon: Icons.phone_rounded,
-                hint: 'رقم الهاتف (مثال: 07817499784)',
+                hint: 'رقم الهاتف',
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 14),
-              _OnboardingField(
-                controller: _cityController,
-                icon: Icons.location_city_rounded,
-                hint: 'مكان السكن (مثال: الديوانية - حي الحسين)',
-              ),
+              _OnboardingField(controller: _cityController, icon: Icons.location_city_rounded, hint: 'مكان السكن'),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
                 child: _ActionButton(
-                  label: _isSaving ? 'جارِ التحقق والحفظ...' : 'دخول آمن',
+                  label: _isSaving ? 'جارِ الحفظ...' : 'دخول',
                   icon: Icons.arrow_forward_rounded,
                   color: AppColors.primary,
                   onTap: _isSaving ? () {} : _submit,
@@ -415,7 +409,6 @@ class _OnboardingField extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
           prefixIcon: Icon(icon, color: AppColors.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -428,7 +421,7 @@ class _OnboardingField extends StatelessWidget {
   }
 }
 
-// ==================== شاشة التنقل الرئيسية ====================
+// ==================== شريط التنقل السفلي المتحرك ====================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -437,16 +430,9 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  static const int _reelsIndex = 2;
   int _currentIndex = 0;
-  final PageController _pageController = PageController();
-
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    AllDoctorsScreen(),
-    ReelsScreen(),
-    MessagesScreen(),
-    SettingsScreen(),
-  ];
+  late final List<Widget> _screens;
 
   final List<Map<String, dynamic>> _navItems = const [
     {'icon': Icons.home_rounded, 'label': 'الرئيسية'},
@@ -456,108 +442,139 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     {'icon': Icons.settings_rounded, 'label': 'الإعدادات'},
   ];
 
-  void _onTabTapped(int index) {
-    tapFeedback();
-    setState(() => _currentIndex = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOutCubic,
-    );
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const HomeScreen(),
+      const AllDoctorsScreen(),
+      ReelsScreen(onSwipeExit: _exitReelsToHome),
+      const MessagesScreen(),
+      const SettingsScreen(),
+    ];
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    // نعيد إظهار أشرطة النظام دائماً عند إغلاق الشاشة تحسباً للخروج من نبض الديوانية
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
+  }
+
+  // يتحكم بإظهار/إخفاء أشرطة النظام حسب القسم المفتوح: ملء شاشة كامل بقسم نبض الديوانية فقط
+  void _updateSystemUI(int index) {
+    if (index == _reelsIndex) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
+  void _changeTab(int index) {
+    tapFeedback();
+    setState(() => _currentIndex = index);
+    _updateSystemUI(index);
+  }
+
+  // يُستدعى عند السحب يمين أو يسار داخل نبض الديوانية للخروج والعودة للرئيسية
+  void _exitReelsToHome() {
+    if (_currentIndex != _reelsIndex) return;
+    _changeTab(0);
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isReelsOpen = _currentIndex == _reelsIndex;
     return Scaffold(
       extendBody: true,
-      body: PageView(
-        controller: _pageController,
-        physics: const PageScrollPhysics(),
-        onPageChanged: (index) {
-          setState(() => _currentIndex = index);
-        },
-        children: _screens,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+        child: _screens[_currentIndex],
+        key: ValueKey(_currentIndex),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              height: 68,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+      // نخفي الشريط السفلي تماماً عند فتح نبض الديوانية لملء الشاشة بالكامل
+      bottomNavigationBar: isReelsOpen
+          ? null
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withOpacity(0.15),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: List.generate(_navItems.length, (index) {
-                  final bool selected = _currentIndex == index;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => _onTabTapped(index),
-                      behavior: HitTestBehavior.opaque,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: selected ? 8 : 4,
-                          vertical: 10,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withOpacity(0.15),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
                         ),
-                        decoration: BoxDecoration(
-                          gradient: selected ? AppColors.heroGradient : null,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _navItems[index]['icon'],
-                              color: selected ? Colors.white : AppColors.textMuted,
-                              size: 22,
-                            ),
-                            if (selected)
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.only(start: 5),
-                                  child: Text(
-                                    _navItems[index]['label'],
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                  );
-                }),
+                    child: Row(
+                      children: List.generate(_navItems.length, (index) {
+                        final bool selected = _currentIndex == index;
+                        // كل عنصر داخل Expanded حتى يبقى الشريط ضمن العرض
+                        // مهما كان عدد الأقسام (يدعم 5 أقسام بدون أي تجاوز)
+                        return Expanded(
+                          child: GestureDetector(
+                            onTap: () => _changeTab(index),
+                            behavior: HitTestBehavior.opaque,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: selected ? 8 : 4,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: selected ? AppColors.heroGradient : null,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _navItems[index]['icon'],
+                                    color: selected ? Colors.white : AppColors.textMuted,
+                                    size: 22,
+                                  ),
+                                  if (selected)
+                                    Flexible(
+                                      child: Padding(
+                                        padding: const EdgeInsetsDirectional.only(start: 5),
+                                        child: Text(
+                                          _navItems[index]['label'],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -592,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _listController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 900),
     );
     _fetchDoctors();
   }
@@ -609,14 +626,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final List<Doctor> loadedDoctors =
           (response as List).map((doc) => Doctor.fromMap(doc)).toList();
 
-      if (!mounted) return;
       setState(() {
         allDoctors = loadedDoctors;
         isLoading = false;
       });
       _listController.forward();
     } catch (e) {
-      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -720,9 +735,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     index: index,
                     onTap: () => pushAnimated(
                       context,
-                      CategoryDoctorsScreen(
-                        categoryName: cat['name'],
-                        allDoctors: allDoctors,
+                      Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: CategoryDoctorsScreen(
+                          categoryName: cat['name'],
+                          allDoctors: allDoctors,
+                        ),
                       ),
                     ),
                   );
@@ -780,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     opacity: animation,
                     child: SlideTransition(
                       position: Tween<Offset>(
-                        begin: const Offset(0, 0.1),
+                        begin: const Offset(0, 0.15),
                         end: Offset.zero,
                       ).animate(animation),
                       child: DoctorCard(doctor: doc),
@@ -805,6 +823,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+// ==================== شريط البحث ====================
 class _SearchBar extends StatelessWidget {
   final List<Doctor> allDoctors;
   const _SearchBar({required this.allDoctors});
@@ -827,7 +846,10 @@ class _SearchBar extends StatelessWidget {
         onSubmitted: (value) {
           pushAnimated(
             context,
-            SearchResultScreen(searchQuery: value, allDoctors: allDoctors),
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: SearchResultScreen(searchQuery: value, allDoctors: allDoctors),
+            ),
           );
         },
         decoration: InputDecoration(
@@ -847,6 +869,7 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
+// ==================== بطاقة تخصص متحركة ====================
 class _CategoryTile extends StatefulWidget {
   final String name;
   final IconData icon;
@@ -891,7 +914,7 @@ class _CategoryTileState extends State<_CategoryTile> {
       },
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 120),
         child: Column(
           children: [
             Container(
@@ -933,6 +956,7 @@ class _CategoryTileState extends State<_CategoryTile> {
   }
 }
 
+// ==================== بطاقة تحميل وهمية (Shimmer) ====================
 class _ShimmerDoctorCard extends StatefulWidget {
   const _ShimmerDoctorCard();
 
@@ -949,7 +973,7 @@ class _ShimmerDoctorCardState extends State<_ShimmerDoctorCard>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
   }
 
@@ -985,6 +1009,7 @@ class _ShimmerDoctorCardState extends State<_ShimmerDoctorCard>
   }
 }
 
+// ==================== بطاقة الطبيب ====================
 class DoctorCard extends StatelessWidget {
   final Doctor doctor;
   const DoctorCard({super.key, required this.doctor});
@@ -1001,7 +1026,13 @@ class DoctorCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: () {
             tapFeedback();
-            pushAnimated(context, DoctorDetailScreen(doctor: doctor));
+            pushAnimated(
+              context,
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: DoctorDetailScreen(doctor: doctor),
+              ),
+            );
           },
           child: Container(
             padding: const EdgeInsets.all(14),
@@ -1085,6 +1116,7 @@ class DoctorCard extends StatelessWidget {
   }
 }
 
+// ==================== شاشة تخصص معين ====================
 class CategoryDoctorsScreen extends StatelessWidget {
   final String categoryName;
   final List<Doctor> allDoctors;
@@ -1110,6 +1142,7 @@ class CategoryDoctorsScreen extends StatelessWidget {
   }
 }
 
+// ==================== شاشة نتائج البحث ====================
 class SearchResultScreen extends StatelessWidget {
   final String searchQuery;
   final List<Doctor> allDoctors;
@@ -1138,6 +1171,7 @@ class SearchResultScreen extends StatelessWidget {
   }
 }
 
+// ==================== قائمة كل الأطباء ====================
 class AllDoctorsScreen extends StatelessWidget {
   const AllDoctorsScreen({super.key});
 
@@ -1170,9 +1204,12 @@ class AllDoctorsScreen extends StatelessWidget {
   }
 }
 
-// ==================== شاشة "نبض الديوانية" (عشوائي + لا نهائي) ====================
+// ==================== شاشة "نبض الديوانية" (ريلز وعروض طبية) ====================
+// تعرض فيديوهات وصور بشكل عمودي متتابع (مثل تيك توك)، مصدرها جدول medical_reels
+// على Supabase مباشرة (Streaming)، بدون أي تحميل أو تخزين محلي على الهاتف.
 class ReelsScreen extends StatefulWidget {
-  const ReelsScreen({super.key});
+  final VoidCallback onSwipeExit;
+  const ReelsScreen({super.key, required this.onSwipeExit});
 
   @override
   State<ReelsScreen> createState() => _ReelsScreenState();
@@ -1206,11 +1243,9 @@ class _ReelsScreenState extends State<ReelsScreen> {
     try {
       final response = await supabase
           .from('medical_reels')
-          .select();
-      
-      var posts = (response as List).map((e) => MedicalPost.fromMap(e)).toList();
-      posts.shuffle(Random());
-
+          .select()
+          .order('created_at', ascending: false);
+      final posts = (response as List).map((e) => MedicalPost.fromMap(e)).toList();
       if (!mounted) return;
       setState(() {
         _posts = posts;
@@ -1226,13 +1261,14 @@ class _ReelsScreenState extends State<ReelsScreen> {
     }
   }
 
+  // يجهّز فيديو الصفحة الحالية + الصفحة التالية والسابقة مسبقاً (Preloading)
+  // ليصير التقليب سلساً بدون انتظار، ويتخلص من أي فيديو بعيد لتوفير الذاكرة
   void _syncControllers(int centerIndex) {
-    if (_posts.isEmpty) return;
-    final int len = _posts.length;
-    final int prevIndex = (centerIndex - 1 + len) % len;
-    final int nextIndex = (centerIndex + 1) % len;
-
-    final wanted = <int>{centerIndex, prevIndex, nextIndex};
+    final wanted = <int>{
+      centerIndex,
+      if (centerIndex + 1 < _posts.length) centerIndex + 1,
+      if (centerIndex - 1 >= 0) centerIndex - 1,
+    };
 
     final toRemove = _controllers.keys.where((k) => !wanted.contains(k)).toList();
     for (final k in toRemove) {
@@ -1268,41 +1304,50 @@ class _ReelsScreenState extends State<ReelsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : _hasError
-              ? Center(
-                  child: Text(
-                    'تعذر تحميل المحتوى، تحقق من الاتصال بالإنترنت',
-                    style: TextStyle(color: Colors.white.withOpacity(0.8)),
-                  ),
-                )
-              : _posts.isEmpty
+      body: GestureDetector(
+        // سحب أفقي حاسم (يمين أو يسار) بأي مكان بالشاشة يخرج من نبض الديوانية للرئيسية
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity.abs() > 250) {
+            widget.onSwipeExit();
+          }
+        },
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : _hasError
                   ? Center(
                       child: Text(
-                        'لا توجد عروض أو مقاطع مضافة حالياً',
-                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                        'تعذر تحميل المحتوى، تحقق من الاتصال بالإنترنت',
+                        style: TextStyle(color: Colors.white.withOpacity(0.8)),
                       ),
                     )
-                  : PageView.builder(
-                      controller: _pageController,
-                      scrollDirection: Axis.vertical,
-                      itemCount: null, 
-                      onPageChanged: (index) {
-                        final actualIndex = index % _posts.length;
-                        _onPageChanged(actualIndex);
-                      },
-                      itemBuilder: (context, index) {
-                        final actualIndex = index % _posts.length;
-                        return _ReelItem(
-                          key: ValueKey('${_posts[actualIndex].id}_$index'),
-                          post: _posts[actualIndex],
-                          controller: _controllers[actualIndex],
-                          isActive: actualIndex == _currentPage,
-                        );
-                      },
-                    ),
+                  : _posts.isEmpty
+                      ? Center(
+                          child: Text(
+                            'لا توجد عروض أو مقاطع مضافة حالياً',
+                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          ),
+                        )
+                      : PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
+                          itemCount: _posts.length,
+                          onPageChanged: _onPageChanged,
+                          itemBuilder: (context, index) {
+                            return _ReelItem(
+                              key: ValueKey(_posts[index].id),
+                              post: _posts[index],
+                              controller: _controllers[index],
+                              isActive: index == _currentPage,
+                            );
+                          },
+                        ),
+        ),
+      ),
     );
   }
 }
@@ -1359,7 +1404,9 @@ class _ReelItemState extends State<_ReelItem> {
             likesList.any((l) => l['user_phone'] == CurrentUser.phone);
         _commentsCount = commentsList.length;
       });
-    } catch (_) {}
+    } catch (_) {
+      // تجاهل بهدوء إذا جداول الإعجاب/التعليقات غير موجودة بعد بقاعدة البيانات
+    }
   }
 
   Future<void> _toggleLike() async {
@@ -1469,6 +1516,7 @@ class _ReelItemState extends State<_ReelItem> {
                 ),
               ),
 
+            // تظليل سفلي متدرج لوضوح النصوص فوق المحتوى
             Positioned(
               left: 0,
               right: 0,
@@ -1528,9 +1576,9 @@ class _ReelItemState extends State<_ReelItem> {
               ),
             ),
 
+            // شريط تفاعل جانبي: إعجاب - تعليق - مشاركة
             Positioned(
-              left: 12,
-              right: null,
+              right: 12,
               bottom: 130,
               child: Column(
                 children: [
@@ -1558,6 +1606,35 @@ class _ReelItemState extends State<_ReelItem> {
               ),
             ),
 
+            // شارة صغيرة أعلى الشاشة تدل على نوع المحتوى
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.45),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      post.isVideo ? Icons.play_circle_fill_rounded : Icons.image_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      post.isVideo ? 'فيديو' : 'عرض',
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // أيقونة تشغيل تظهر عند الإيقاف المؤقت
             if (_showPauseIcon)
               const Center(
                 child: Icon(Icons.play_arrow_rounded, color: Colors.white70, size: 70),
@@ -1796,13 +1873,14 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 }
 
+// ==================== شاشة المراسلة ====================
 class MessagesScreen extends StatelessWidget {
   const MessagesScreen({super.key});
 
   Future<void> _openUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint('تعذر فتح الرابط');
+      debugPrint('لا يمكن فتح الرابط');
     }
   }
 
@@ -1863,13 +1941,14 @@ class MessagesScreen extends StatelessWidget {
   }
 }
 
+// ==================== شاشة الإعدادات ====================
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   Future<void> _openUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint('تعذر فتح الرابط');
+      debugPrint('لا يمكن فتح الرابط');
     }
   }
 
@@ -1880,13 +1959,13 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const _SettingsCard(
+          _SettingsCard(
             icon: Icons.info_outline_rounded,
             title: 'عن التطبيق',
             subtitle: 'دليل أطباء الديوانية السحابي - النسخة العصرية',
           ),
           const SizedBox(height: 10),
-          const _SettingsCard(
+          _SettingsCard(
             icon: Icons.notifications_outlined,
             title: 'الإشعارات',
             subtitle: 'تفعيل إشعارات العيادات والأطباء الجدد',
@@ -1954,43 +2033,44 @@ class _SettingsCard extends StatelessWidget {
                 onTap!();
               },
         child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: (iconColor ?? AppColors.primary).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor ?? AppColors.primary),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primary).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: iconColor ?? AppColors.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                    const SizedBox(height: 2),
-                    Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                  ],
-                ),
-              ),
-              if (trailing != null) trailing!,
-            ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              ],
+            ),
           ),
+          if (trailing != null) trailing!,
+        ],
+      ),
         ),
       ),
     );
   }
 }
 
+// ==================== شاشة تفاصيل الطبيب ====================
 class DoctorDetailScreen extends StatelessWidget {
   final Doctor doctor;
   const DoctorDetailScreen({super.key, required this.doctor});
@@ -1998,10 +2078,11 @@ class DoctorDetailScreen extends StatelessWidget {
   Future<void> _openUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint('تعذر فتح الرابط');
+      debugPrint('لا يمكن فتح الرابط');
     }
   }
 
+  // فتح موقع العيادة على خرائط جوجل بالإحداثيات المخزنة، أو بالعنوان النصي كحل احتياطي
   Future<void> _openGoogleMap() async {
     final String googleMapsUrl = doctor.hasLocation
         ? 'https://www.google.com/maps/search/?api=1&query=${doctor.latitude},${doctor.longitude}'
@@ -2081,14 +2162,14 @@ class DoctorDetailScreen extends StatelessWidget {
                 children: [
                   _AnimatedInfoCard(delayMs: 0, icon: Icons.local_hospital_rounded, title: 'العيادة', subtitle: doctor.clinicName),
                   _AnimatedInfoCard(
-                    delayMs: 60,
+                    delayMs: 80,
                     icon: Icons.location_on_rounded,
                     title: 'العنوان (اضغط لعرض الموقع على الخريطة)',
                     subtitle: doctor.address,
                     onTap: _openGoogleMap,
                   ),
-                  _AnimatedInfoCard(delayMs: 120, icon: Icons.access_time_rounded, title: 'أوقات الدوام', subtitle: doctor.workingHours),
-                  _AnimatedInfoCard(delayMs: 180, icon: Icons.description_rounded, title: 'نبذة عن الطبيب', subtitle: doctor.bio),
+                  _AnimatedInfoCard(delayMs: 160, icon: Icons.access_time_rounded, title: 'أوقات الدوام', subtitle: doctor.workingHours),
+                  _AnimatedInfoCard(delayMs: 240, icon: Icons.description_rounded, title: 'نبذة عن الطبيب', subtitle: doctor.bio),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -2151,13 +2232,13 @@ class _AnimatedInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 350 + delayMs),
+      duration: Duration(milliseconds: 500 + delayMs),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, (1 - value) * 12),
+            offset: Offset(0, (1 - value) * 16),
             child: child,
           ),
         );
@@ -2169,47 +2250,47 @@ class _AnimatedInfoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppColors.textDark),
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                      ),
-                    ],
-                  ),
-                ),
-                if (onTap != null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Icon(Icons.chevron_left_rounded, color: AppColors.primary, size: 20),
-                  ),
-              ],
+                ],
+              ),
             ),
+            if (onTap != null)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Icon(Icons.chevron_left_rounded, color: AppColors.primary, size: 20),
+              ),
+          ],
+        ),
           ),
         ),
       ),
@@ -2246,7 +2327,7 @@ class _ActionButtonState extends State<_ActionButton> {
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 120),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
@@ -2273,6 +2354,7 @@ class _ActionButtonState extends State<_ActionButton> {
   }
 }
 
+// ==================== أدوات مشتركة ====================
 PreferredSizeWidget _gradientAppBar(String title) {
   return AppBar(
     title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
